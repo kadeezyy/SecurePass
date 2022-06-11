@@ -19,8 +19,8 @@ public class Main {
         server.start();
     }
     private static IDatabase initDatabase() {
-        String user = "s341474";
-        String password = "drj262";
+        String user = "";
+        String password = "";
         SSHTunnel tunnel = new SSHTunnel("se.ifmo.ru", user, password, 2222, "pg", 8594, 5432);
         return new PostgreSQLDatabase("localhost", tunnel.create(), "studs", user, password);
     }
