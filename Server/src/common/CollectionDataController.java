@@ -4,8 +4,7 @@ import collection.Organization;
 import interfaces.IDatabase;
 import interfaces.common.IDataController;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,6 @@ public class CollectionDataController implements IDataController<Integer, Organi
         this.database = database;
         this.userDataController = userDataController;
         try {
-//            database.executeQuery("DROP TABLE IF EXISTS collection CASCADE").close();
             database.executeQuery("DROP SEQUENCE IF EXISTS id_sequence").close();
 
             database.executeQuery("CREATE SEQUENCE IF NOT EXISTS %s", SEQUENCE_NAME).close();
@@ -53,6 +51,17 @@ public class CollectionDataController implements IDataController<Integer, Organi
                     TYPE_COLUMN, POSTAL_ADDRESS_COLUMN,
                     OWNER_COLUMN
             ).close();
+            ResultSet res = database.executeQuery("SELECT MAX(%s) FROM %s", ID_COLUMN, COLLECTION_TABLE_NAME);
+            long maxId = 0;
+            while (res.next()) {
+                if (res.getInt(1) >= maxId) {
+                    maxId = res.getInt(1);
+                }
+            }
+            res.close();
+            database.executeQuery("DROP SEQUENCE IF EXISTS " + SEQUENCE_NAME).close();
+
+            database.executeQuery("CREATE SEQUENCE IF NOT EXISTS " + SEQUENCE_NAME + " START " + (maxId + 1)).close();
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
@@ -87,19 +96,23 @@ public class CollectionDataController implements IDataController<Integer, Organi
 
     public boolean insert(Organization organization) {
         try {
-            database.executeQuery("INSERT INTO %s  VALUES " +
-                            "(nextval('%s'), '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
-                    COLLECTION_TABLE_NAME, SEQUENCE_NAME, organization.getName(),
-                    organization.getCoordinates(), organization.getCreationDate(),
-                    organization.getAnnualTurnover(), organization.getFullName(),
-                    organization.getEmployeesCount(), organization.getType().name(),
-                    organization.getPostalAddress(),
-                    organization.getOwner().getName()
-            ).close();
             ResultSet result = database.executeQuery("SELECT MAX(%s) FROM %s", ID_COLUMN, COLLECTION_TABLE_NAME);
             result.next();
-            organization.setId(result.getInt(1));
+            organization.setId(result.getInt(1) + 1);
             result.close();
+            database.setStatement("INSERT INTO collection VALUES (nextval(?), ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+            database.getStatement().setString(1, SEQUENCE_NAME);
+            database.getStatement().setString(2, organization.getName());
+            database.getStatement().setString(3, organization.getCoordinates());
+            database.getStatement().setString(4, String.valueOf(organization.getCreationDate()));
+            database.getStatement().setFloat(5, organization.getAnnualTurnover());
+            database.getStatement().setString(6, organization.getFullName());
+            database.getStatement().setInt(7, organization.getEmployeesCount());
+            database.getStatement().setString(8, organization.getType().name());
+            database.getStatement().setString(9, organization.getPostalAddress());
+            database.getStatement().setString(10, organization.getOwner().getName());
+            database.executeQueryStatement().close();
+
             return true;
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -109,18 +122,18 @@ public class CollectionDataController implements IDataController<Integer, Organi
 
     public boolean update(Organization organization) {
         try {
-            database.executeQuery("UPDATE %s SET " +
-                            "%s='%s', %s='%s', %s='%s', %s='%s', %s='%s', %s=%d, %s='%s', %s='%s'" +
-                            "WHERE %s=%d",
-                    COLLECTION_TABLE_NAME, NAME_COLUMN, organization.getName(),
-                    COORDINATES_COLUMN, organization.getCoordinates(),
-                    CREATION_DATE_COLUMN, organization.getCreationDate(),
-                    ANNUAL_TURNOVER_COLUMN, organization.getAnnualTurnover(),
-                    FULL_NAME_COLUMN, organization.getFullName(),
-                    EMPLOYEES_COUNT_COLUMN, organization.getEmployeesCount(),
-                    TYPE_COLUMN, organization.getType().name(),
-                    POSTAL_ADDRESS_COLUMN, organization.getPostalAddress(),
-                    ID_COLUMN, organization.getId()).close();
+            database.setStatement("UPDATE  collection SET name=?, coordinates=?, creation_date=?, " +
+                    "annual_turnover=?, full_name=?, employees_count=?, type=?, postal_address=?,id=?");
+            database.getStatement().setString(1, organization.getName());
+            database.getStatement().setString(2, organization.getCoordinates());
+            database.getStatement().setString(3, String.valueOf(organization.getCreationDate()));
+            database.getStatement().setFloat(4, organization.getAnnualTurnover());
+            database.getStatement().setString(5, organization.getFullName());
+            database.getStatement().setInt(6, organization.getEmployeesCount());
+            database.getStatement().setString(7, organization.getType().name());
+            database.getStatement().setString(8, organization.getPostalAddress());
+            database.getStatement().setInt(9, organization.getId());
+            database.executeQueryStatement().close();
             return true;
         } catch (SQLException ex) {
             return false;
