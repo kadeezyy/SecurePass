@@ -1,5 +1,7 @@
 package interfaces;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -13,10 +15,16 @@ public interface IDatabase {
             if (!(arg[i] instanceof String)) {
                 continue;
             }
-            arg[i] = arg[i].toString().replace("'", "' '");
+            arg[i] = arg[i].toString().replace("'", "''");
         }
         return executeQuery(String.format(query, arg));
     }
+
+    ResultSet executeQueryStatement() throws SQLException;
+
+    void setStatement(String sql);
+
+    PreparedStatement getStatement();
 
     void disconnect();
 }
