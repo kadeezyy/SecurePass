@@ -16,6 +16,7 @@ public class PostgreSQLDatabase implements IDatabase {
     private final int port;
     private final String database, username, password;
     private Connection connection;
+    private PreparedStatement statement;
 
     public PostgreSQLDatabase(String host, int port, String database, String username, String password) {
         this.host = host;
@@ -58,4 +59,23 @@ public class PostgreSQLDatabase implements IDatabase {
         }
     }
 
+    public ResultSet executeQueryStatement() throws SQLException {
+        ResultSet resultSet;
+        statement.executeUpdate();
+        resultSet = statement.getGeneratedKeys();
+        return resultSet;
+    }
+
+    public void setStatement(String sql) {
+        try {
+            this.statement = this.connection.prepareStatement(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public PreparedStatement getStatement() {
+        return statement;
+    }
 }
