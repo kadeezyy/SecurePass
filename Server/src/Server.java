@@ -30,7 +30,7 @@ public class Server implements IServer {
             handlingService = Executors.newCachedThreadPool();
 
 
-    UserDataController userDataController;
+    private UserDataController userDataController;
     final Map<SocketAddress, User> users = new HashMap<>();
 
 
